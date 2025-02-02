@@ -20,12 +20,11 @@ function getaccesstoken() {
             accesstoken = tokenmatch[1]
             window.location.hash = ""
 
-            // Hide overlay and show main UI
             document.getElementById("overlay").style.display = "none"
             document.getElementById("maincontainer").classList.remove("hidden")
 
             fetchnowplaying()
-            setInterval(fetchnowplaying, 100) // Fetch song every 0.1s
+            setInterval(fetchnowplaying, 100)
         }
     }
 }
@@ -41,13 +40,14 @@ async function fetchlyrics(song, artist) {
         if (data.lyrics) {
             document.getElementById("lyrics").textContent = data.lyrics
         } else {
-            document.getElementById("lyrics").textContent = "Lyrics not found."
+            document.getElementById("lyrics").textContent = "Error loading lyrics! If that's a mistake, add a manual link!"
         }
     } catch (error) {
         console.error("Error fetching lyrics:", error)
-        document.getElementById("lyrics").textContent = "Error loading lyrics."
+        document.getElementById("lyrics").textContent = "Error loading lyrics! If that's a mistake, add a manual link!"
     }
 }
+
 
 async function fetchnowplaying() {
     if (!accesstoken) return
@@ -60,19 +60,18 @@ async function fetchnowplaying() {
         if (response.status === 200) {
             const data = await response.json()
             if (data.item) {
-                const newsongid = data.item.id // Get the song's unique ID
+                const newsongid = data.item.id
 
                 if (newsongid !== currentsongid) { 
-                    // Only update lyrics if the song has changed
                     currentsongid = newsongid 
-
-                    document.getElementById("albumart").src = data.item.album.images[0].url
-                    document.getElementById("songtitle").textContent = data.item.name
-                    document.getElementById("artistname").textContent = data.item.artists.map(artist => artist.name).join(", ")
 
                     const song = data.item.name
                     const artist = data.item.artists[0].name
-                    fetchlyrics(song, artist) // Fetch lyrics only when song changes
+                    fetchlyrics(song, artist)
+                    document.getElementById("albumart").src = data.item.album.images[0].url
+                    document.getElementById("songtitle").textContent = data.item.name
+                    document.getElementById("artistname").textContent = data.item.artists.map(artist => artist.name).join(", ")
+                    window.scrollTo(0, 0)
                 }
             }
         }
