@@ -48,6 +48,91 @@ async function fetchlyrics(song, artist) {
     }
 }
 
+function setCookie(name, value, days) {
+    var expires = "";
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+function getCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
+
+window.onload = function() {
+    var userTextbox = document.getElementById('usertextbox');
+    var savedText = getCookie('userText');
+    if (savedText) {
+        userTextbox.value = savedText;
+    }
+
+    userTextbox.addEventListener('input', function() {
+        setCookie('userText', userTextbox.value, 7);
+    });
+
+    getaccesstoken();
+};
+
+var modal = document.getElementById("manualgeniusmodal");
+var btn = document.getElementById("manualgeniusbutton");
+var span = document.getElementsByClassName("close")[0];
+var saveBtn = document.getElementById("savemanualgenius");
+
+btn.onclick = function() {
+    modal.style.display = "block";
+}
+
+span.onclick = function() {
+    modal.style.display = "none";
+}
+
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+
+saveBtn.onclick = function() {
+    var manualLink = document.getElementById("manualgeniusinput").value;
+    if (manualLink) {
+        console.log("Manual link saved:", manualLink);
+        fetchManualLyrics(manualLink);
+    } else {
+        const song = document.getElementById("songtitle").textContent;
+        const artist = document.getElementById("artistname").textContent;
+        console.log("Reverting to assumed link with song:", song, "and artist:", artist);
+        fetchlyrics(song, artist);
+    }
+    modal.style.display = "none";
+}
+
+async function fetchManualLyrics(url) {
+    console.log("Fetching manual lyrics from URL:", url);
+    try {
+        const response = await fetch(`/lyrics?url=${encodeURIComponent(url)}`);
+        const data = await response.json();
+        if (data.lyrics) {
+            console.log("Lyrics fetched successfully:", data.lyrics);
+            document.getElementById("lyrics").textContent = data.lyrics;
+        } else {
+            console.log("Error loading lyrics from manual link");
+            document.getElementById("lyrics").textContent = "Error loading lyrics! If that's a mistake, add a manual link!";
+        }
+    } catch (error) {
+        console.error("Error fetching lyrics:", error);
+        document.getElementById("lyrics").textContent = "Error loading lyrics! If that's a mistake, add a manual link!";
+    }
+}
 
 async function fetchnowplaying() {
     if (!accesstoken) return
@@ -67,6 +152,7 @@ async function fetchnowplaying() {
 
                     const song = data.item.name
                     const artist = data.item.artists[0].name
+                    console.log("Now playing song:", song, "by artist:", artist);
                     fetchlyrics(song, artist)
                     document.getElementById("albumart").src = data.item.album.images[0].url
                     document.getElementById("songtitle").textContent = data.item.name
@@ -79,5 +165,3 @@ async function fetchnowplaying() {
         console.error("Error fetching now playing:", error)
     }
 }
-
-window.onload = getaccesstoken
